@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://render.com/docs/web-services#port-binding';
 
 function App() {
   const [expenses, setExpenses] = useState([]);
