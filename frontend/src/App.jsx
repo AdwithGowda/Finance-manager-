@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = 'https://render.com/docs/web-services#port-binding';
+const API_URL = 'http://localhost:8000';
 
 function App() {
   const [expenses, setExpenses] = useState([]);
@@ -144,7 +144,7 @@ function App() {
                 {Object.entries(categoryTotals).map(([cat, val]) => (
                   <div key={cat} className="flex justify-between items-center">
                     <span className={`text-xs font-bold px-2 py-1 rounded-md ${getCategoryStyle(cat)}`}>{cat}</span>
-                    <span className="font-mono font-bold text-slate-600">${val.toFixed(2)}</span>
+                    <span className="font-mono font-bold text-slate-600">₹{val.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
