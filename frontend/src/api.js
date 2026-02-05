@@ -1,6 +1,12 @@
-import axios from 'axios';
+// src/api.js
+import api from "./utils/api"; // ✅ use the authenticated axios instance
 
-const API_URL = 'http://localhost:8000';
+export const fetchExpenses = () => api.get("/expenses");
 
-export const fetchExpenses = () => axios.get(`${API_URL}/expenses`);
-export const createExpense = (data) => axios.post(`${API_URL}/expenses`, data);
+export const createExpense = (data) => api.post("/expenses", data);
+
+export const updateExpense = (id, data) =>
+  api.put(`/expenses/${id}`, data);
+
+export const deleteExpense = (id) =>
+  api.delete(`/expenses/${id}`);
