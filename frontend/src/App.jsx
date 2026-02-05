@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Auth from "./pages/Auth";
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 /* -------------------- AXIOS AUTH INTERCEPTOR -------------------- */
 axios.interceptors.request.use((config) => {
