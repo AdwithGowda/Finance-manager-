@@ -1,6 +1,5 @@
 import { useState } from "react";
 import axios from "axios";
-// import Toast from "../Toast"; // Adjust path if needed
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -9,19 +8,12 @@ export default function Auth({ onAuthSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Toast state
-  const [toastConfig, setToastConfig] = useState({ isOpen: false, message: "" });
-
-  const showToast = (msg) => {
-    setToastConfig({ isOpen: true, message: msg });
-  };
+  const [isLoading, setIsLoading] = useState(false); // New Loading State
 
   const submit = async (e) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
+    setIsLoading(true); // Start Loading
 
     try {
       const url = isLogin ? "/login" : "/register";
@@ -33,19 +25,17 @@ export default function Auth({ onAuthSuccess }) {
 
       if (isLogin) {
         localStorage.setItem("token", res.data.access_token);
+        // Small delay so the user sees the "Success" state
         setTimeout(() => {
           onAuthSuccess();
         }, 800);
       } else {
-        // Registration Success
         setIsLoading(false);
-        showToast("Registered successfully. Please login."); 
-        setIsLogin(true); // Switch to login view
-        setEmail(""); // Optional: clear email
-        setPassword(""); // Optional: clear password
+        setIsLogin(true);
+        alert("Registered successfully. Please login.");
       }
     } catch (err) {
-      setIsLoading(false);
+      setIsLoading(false); // Stop loading on error
       setError(err.response?.data?.detail || "Auth failed");
     }
   };
@@ -97,11 +87,12 @@ export default function Auth({ onAuthSuccess }) {
           />
         </div>
 
+        {/* UPDATED BUTTON WITH LOADING STATE */}
         <button
           disabled={isLoading}
-          className={`w-full font-bold py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer
+          className={`w-full font-bold py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98] 
             ${isLoading 
-              ? "bg-emerald-500 shadow-emerald-200 text-white" 
+              ? "bg-emerald-500 shadow-emerald-200 text-white cursor-po" 
               : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 text-white"
             }`}
         >
@@ -132,20 +123,13 @@ export default function Auth({ onAuthSuccess }) {
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors cursor-pointer"
+            className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors"
             disabled={isLoading}
           >
             {isLogin ? "Register" : "Login"}
           </button>
         </p>
       </form>
-
-      {/* Toast Component for Registration Success */}
-      <Toast 
-        isOpen={toastConfig.isOpen} 
-        message={toastConfig.message} 
-        onClose={() => setToastConfig({ ...toastConfig, isOpen: false })} 
-      />
     </div>
   );
 }
