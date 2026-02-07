@@ -46,7 +46,17 @@ export default function Auth({ onAuthSuccess }) {
         onSubmit={submit}
         className="bg-white p-8 rounded-3xl shadow-lg border border-slate-200/60 w-full max-w-md space-y-6"
       >
+               {/* LOGO AND TITLE SECTION */}
         <div className="text-center mb-2">
+          <div className="flex justify-center mb-4">
+            <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center">
+              <img
+                src="/ag1.png"
+                alt="Logo"
+                className="w-8 h-8 object-contain"
+              />
+            </div>
+          </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-indigo-600">
             MyWallet<span className="text-indigo-400">Pro</span>
           </h1>
