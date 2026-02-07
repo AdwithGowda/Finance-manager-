@@ -51,7 +51,7 @@ export default function Auth({ onAuthSuccess }) {
           <div className="flex justify-center mb-4">
             <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center">
               <img
-                src="/ag1.png"
+                src="/agw2.png"
                 alt="Logo"
                 className="w-8 h-8 object-contain"
               />
