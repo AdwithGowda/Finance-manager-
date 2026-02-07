@@ -18,8 +18,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL not found")
-    
-DATABASE_URL=DATABASE_URL.strip()
+
 # ================= APP =================
 app = FastAPI()
 
@@ -46,16 +45,28 @@ async def startup():
             );
         """)
 
-        # EXPENSES TABLE
+        # EXPENSES TABLE (Updated with 'date' column)
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS expenses (
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 amount NUMERIC(10,2) NOT NULL,
                 category TEXT NOT NULL,
+                date TEXT NOT NULL, 
                 date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
             );
+        """)
+        
+        # Check if 'date' column exists for old databases, add if missing
+        await conn.execute("""
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                               WHERE table_name='expenses' AND column_name='date') THEN
+                    ALTER TABLE expenses ADD COLUMN date TEXT DEFAULT CURRENT_DATE::TEXT;
+                END IF;
+            END $$;
         """)
 
     print("✅ Tables created / verified")
@@ -69,10 +80,12 @@ class User(BaseModel):
     email: str
     password: str
 
+# Updated Expense Model to include date
 class Expense(BaseModel):
     title: str
     amount: float
     category: str
+    date: str 
 
 # ================= AUTH =================
 @app.post("/register")
@@ -97,7 +110,7 @@ async def login(user: User):
         )
 
     if not db_user or not verify_password(user.password, db_user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid email or password. Please try again.")
 
     token = create_access_token({"user_id": db_user["id"]})
     return {
@@ -109,11 +122,12 @@ async def login(user: User):
 @app.get("/expenses")
 async def get_expenses(user_id: int = Depends(get_current_user)):
     async with app.state.db.acquire() as conn:
+        # Added 'date' to SELECT
         data = await conn.fetch("""
-            SELECT id, title, amount, category, date_created
+            SELECT id, title, amount, category, date, date_created
             FROM expenses
             WHERE user_id=$1
-            ORDER BY id DESC
+            ORDER BY date DESC, id DESC
         """, user_id)
 
     return [dict(row) for row in data]
@@ -125,13 +139,15 @@ async def add_expense(
 ):
     try:
         async with app.state.db.acquire() as conn:
+            # Added 'date' to INSERT
             await conn.execute("""
-                INSERT INTO expenses (title, amount, category, user_id)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO expenses (title, amount, category, date, user_id)
+                VALUES ($1, $2, $3, $4, $5)
             """,
             expense.title,
             expense.amount,
             expense.category,
+            expense.date,
             user_id,
             )
 
@@ -148,14 +164,16 @@ async def update_expense(
     user_id: int = Depends(get_current_user)
 ):
     async with app.state.db.acquire() as conn:
+        # Added 'date' to UPDATE
         await conn.execute("""
             UPDATE expenses
-            SET title=$1, amount=$2, category=$3
-            WHERE id=$4 AND user_id=$5
+            SET title=$1, amount=$2, category=$3, date=$4
+            WHERE id=$5 AND user_id=$6
         """,
         expense.title,
         expense.amount,
         expense.category,
+        expense.date,
         expense_id,
         user_id,
         )
