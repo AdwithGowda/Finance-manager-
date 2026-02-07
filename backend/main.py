@@ -1,8 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from psycopg2.extras import RealDictCursor
-import psycopg2
+import asyncpg
 import os
 from dotenv import load_dotenv
 
@@ -19,68 +18,51 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL not found")
-
+    
+DATABASE_URL=DATABASE_URL.strip()
 # ================= APP =================
 app = FastAPI()
 
 # ================= CORS =================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://finance-manager-f.onrender.com",  # React frontend
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],  # change in production
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ================= DB =================
-def get_connection():
-    return psycopg2.connect(DATABASE_URL)
-
+# ================= DB POOL =================
 @app.on_event("startup")
-def startup():
-    conn = get_connection()
-    cur = conn.cursor()
+async def startup():
+    app.state.db = await asyncpg.create_pool(DATABASE_URL)
 
-    # ---------------- USERS TABLE ----------------
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        );
-    """)
-
-    # ---------------- EXPENSES TABLE (BASE) ----------------
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS expenses (
-            id SERIAL PRIMARY KEY,
-            title TEXT NOT NULL,
-            amount NUMERIC(10,2) NOT NULL,
-            category TEXT NOT NULL,
-            date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
-
-    # ---------------- ADD user_id COLUMN IF MISSING ----------------
-    cur.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='expenses' AND column_name='user_id';
-    """)
-
-    if cur.fetchone() is None:
-        cur.execute("""
-            ALTER TABLE expenses
-            ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+    async with app.state.db.acquire() as conn:
+        # USERS TABLE
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL
+            );
         """)
-        print("➕ user_id column added to expenses table")
 
-    conn.commit()
-    conn.close()
-    print("✅ Tables created / verified successfully")
+        # EXPENSES TABLE
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS expenses (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                amount NUMERIC(10,2) NOT NULL,
+                category TEXT NOT NULL,
+                date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+            );
+        """)
 
+    print("✅ Tables created / verified")
+
+@app.on_event("shutdown")
+async def shutdown():
+    await app.state.db.close()
 
 # ================= MODELS =================
 class User(BaseModel):
@@ -94,29 +76,25 @@ class Expense(BaseModel):
 
 # ================= AUTH =================
 @app.post("/register")
-def register(user: User):
-    conn = get_connection()
-    cur = conn.cursor()
+async def register(user: User):
     try:
-        cur.execute(
-            "INSERT INTO users (email, password) VALUES (%s, %s)",
-            (user.email, hash_password(user.password))
-        )
-        conn.commit()
+        async with app.state.db.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO users (email, password) VALUES ($1, $2)",
+                user.email,
+                hash_password(user.password),
+            )
         return {"message": "User registered successfully"}
     except:
         raise HTTPException(status_code=400, detail="User already exists")
-    finally:
-        conn.close()
 
 @app.post("/login")
-def login(user: User):
-    conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-
-    cur.execute("SELECT * FROM users WHERE email=%s", (user.email,))
-    db_user = cur.fetchone()
-    conn.close()
+async def login(user: User):
+    async with app.state.db.acquire() as conn:
+        db_user = await conn.fetchrow(
+            "SELECT * FROM users WHERE email=$1",
+            user.email,
+        )
 
     if not db_user or not verify_password(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -129,80 +107,71 @@ def login(user: User):
 
 # ================= EXPENSES (JWT PROTECTED) =================
 @app.get("/expenses")
-def get_expenses(user_id: int = Depends(get_current_user)):
-    conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+async def get_expenses(user_id: int = Depends(get_current_user)):
+    async with app.state.db.acquire() as conn:
+        data = await conn.fetch("""
+            SELECT id, title, amount, category, date_created
+            FROM expenses
+            WHERE user_id=$1
+            ORDER BY id DESC
+        """, user_id)
 
-    cur.execute(
-        """SELECT id, title, amount, category, date_created
-           FROM expenses
-           WHERE user_id=%s
-           ORDER BY id DESC""",
-        (user_id,)
-    )
-    data = cur.fetchall()
-    conn.close()
-    return data
+    return [dict(row) for row in data]
 
 @app.post("/expenses")
-def add_expense(
+async def add_expense(
     expense: Expense,
     user_id: int = Depends(get_current_user)
 ):
     try:
-        conn = get_connection()
-        cur = conn.cursor()
-
-        cur.execute(
-            """
-            INSERT INTO expenses (title, amount, category, user_id)
-            VALUES (%s, %s, %s, %s)
+        async with app.state.db.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO expenses (title, amount, category, user_id)
+                VALUES ($1, $2, $3, $4)
             """,
-            (expense.title, expense.amount, expense.category, user_id),
-        )
-
-        conn.commit()
-        cur.close()
-        conn.close()
+            expense.title,
+            expense.amount,
+            expense.category,
+            user_id,
+            )
 
         return {"status": "success"}
 
     except Exception as e:
         print("❌ ADD EXPENSE ERROR:", e)
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail="Failed to add expense")
 
 @app.put("/expenses/{expense_id}")
-def update_expense(
+async def update_expense(
     expense_id: int,
     expense: Expense,
     user_id: int = Depends(get_current_user)
 ):
-    conn = get_connection()
-    cur = conn.cursor()
+    async with app.state.db.acquire() as conn:
+        await conn.execute("""
+            UPDATE expenses
+            SET title=$1, amount=$2, category=$3
+            WHERE id=$4 AND user_id=$5
+        """,
+        expense.title,
+        expense.amount,
+        expense.category,
+        expense_id,
+        user_id,
+        )
 
-    cur.execute(
-        """UPDATE expenses
-           SET title=%s, amount=%s, category=%s
-           WHERE id=%s AND user_id=%s""",
-        (expense.title, expense.amount, expense.category, expense_id, user_id),
-    )
-    conn.commit()
-    conn.close()
     return {"status": "updated"}
 
 @app.delete("/expenses/{expense_id}")
-def delete_expense(
+async def delete_expense(
     expense_id: int,
     user_id: int = Depends(get_current_user)
 ):
-    conn = get_connection()
-    cur = conn.cursor()
+    async with app.state.db.acquire() as conn:
+        await conn.execute(
+            "DELETE FROM expenses WHERE id=$1 AND user_id=$2",
+            expense_id,
+            user_id,
+        )
 
-    cur.execute(
-        "DELETE FROM expenses WHERE id=%s AND user_id=%s",
-        (expense_id, user_id),
-    )
-    conn.commit()
-    conn.close()
     return {"status": "deleted"}
