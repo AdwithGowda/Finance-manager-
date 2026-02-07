@@ -1,17 +1,27 @@
 import { useState } from "react";
 import axios from "axios";
+import Toast from "../Toast"; // Adjust path if needed
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function Auth({ onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Toast state
+  const [toastConfig, setToastConfig] = useState({ isOpen: false, message: "" });
+
+  const showToast = (msg) => {
+    setToastConfig({ isOpen: true, message: msg });
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     try {
       const url = isLogin ? "/login" : "/register";
@@ -23,12 +33,19 @@ export default function Auth({ onAuthSuccess }) {
 
       if (isLogin) {
         localStorage.setItem("token", res.data.access_token);
-        onAuthSuccess();
+        setTimeout(() => {
+          onAuthSuccess();
+        }, 800);
       } else {
-        setIsLogin(true);
-        alert("Registered successfully. Please login.");
+        // Registration Success
+        setIsLoading(false);
+        showToast("Registered successfully. Please login."); 
+        setIsLogin(true); // Switch to login view
+        setEmail(""); // Optional: clear email
+        setPassword(""); // Optional: clear password
       }
     } catch (err) {
+      setIsLoading(false);
       setError(err.response?.data?.detail || "Auth failed");
     }
   };
@@ -49,7 +66,7 @@ export default function Auth({ onAuthSuccess }) {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm animate-shake">
             {error}
           </div>
         )}
@@ -63,6 +80,7 @@ export default function Auth({ onAuthSuccess }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -75,11 +93,29 @@ export default function Auth({ onAuthSuccess }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
 
-        <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98]">
-          {isLogin ? "Login" : "Create Account"}
+        <button
+          disabled={isLoading}
+          className={`w-full font-bold py-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer
+            ${isLoading 
+              ? "bg-emerald-500 shadow-emerald-200 text-white" 
+              : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 text-white"
+            }`}
+        >
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Authenticating...</span>
+            </>
+          ) : (
+            <span>{isLogin ? "Login" : "Create Account"}</span>
+          )}
         </button>
 
         <div className="relative my-6">
@@ -96,12 +132,20 @@ export default function Auth({ onAuthSuccess }) {
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors"
+            className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors cursor-pointer"
+            disabled={isLoading}
           >
             {isLogin ? "Register" : "Login"}
           </button>
         </p>
       </form>
+
+      {/* Toast Component for Registration Success */}
+      <Toast 
+        isOpen={toastConfig.isOpen} 
+        message={toastConfig.message} 
+        onClose={() => setToastConfig({ ...toastConfig, isOpen: false })} 
+      />
     </div>
   );
 }
