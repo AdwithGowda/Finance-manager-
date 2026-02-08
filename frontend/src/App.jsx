@@ -37,11 +37,11 @@ function App() {
     date: new Date().toISOString().split('T')[0]
   });
 
-  const [spendType, setSpendType] = useState('Main');
+  const [spendType, setSpendType] = useState('Expenses');
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const [filterMode, setFilterMode] = useState('Main');
-  const [summaryFilter, setSummaryFilter] = useState('Main');
+  const [filterMode, setFilterMode] = useState('Expenses');
+  const [summaryFilter, setSummaryFilter] = useState('Expenses');
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, id: null });
   const [toastConfig, setToastConfig] = useState({ isOpen: false, message: '' });
 
@@ -65,7 +65,7 @@ function App() {
 
   const resetForm = () => {
     setForm({ title: '', amount: '', category: 'Food', date: new Date().toISOString().split('T')[0] });
-    setSpendType('Main');
+    setSpendType('Expenses');
     setEditingId(null);
   };
 
@@ -101,7 +101,7 @@ function App() {
     setEditingId(exp.id);
     const [catName, type] = exp.category.split(':');
     setForm({ title: exp.title, amount: exp.amount, category: catName || exp.category, date: exp.date });
-    setSpendType(type || 'Main');
+    setSpendType(type || 'Expenses');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast("Editing mode active");
   };
@@ -131,13 +131,13 @@ function App() {
 
   const filteredTable = dateFiltered.filter(exp => {
     const matchesSearch = exp.title.toLowerCase().includes(search.toLowerCase());
-    const type = exp.category.split(':')[1] || 'Main';
+    const type = exp.category.split(':')[1] || 'Expenses';
     return matchesSearch && type === filterMode;
   });
 
   const categoryTotals = dateFiltered.reduce((acc, exp) => {
     const [name, type] = exp.category.split(':');
-    const finalType = type || 'Main';
+    const finalType = type || 'Expenses';
     if (finalType === summaryFilter) {
       acc[name] = (acc[name] || 0) + exp.amount;
     }
@@ -145,7 +145,7 @@ function App() {
   }, {});
 
   const getBalance = (type) => expenses
-    .filter(exp => (exp.category.split(':')[1] || 'Main') === type)
+    .filter(exp => (exp.category.split(':')[1] || 'Expenses') === type)
     .reduce((sum, exp) => sum + exp.amount, 0);
 
   const getCategoryStyle = (cat) => {
@@ -196,9 +196,9 @@ function App() {
               {/* Dynamic Balance Display */}
               <div className="flex flex-wrap justify-center gap-2 bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner w-full sm:w-auto">
                 {[
-                  { l: 'Main', v: getBalance('Main') },
-                  { l: 'Other', v: getBalance('Other') },
-                  { l: 'Come', v: getBalance('Come') }
+                  { l: 'Expenses', v: getBalance('Expenses') },
+                  { l: 'Receivables', v: getBalance('Receivables') },
+                  { l: 'Payables', v: getBalance('Payables') }
                 ].map((item, index, array) => (
                   <div key={item.l} className="flex items-center">
                     <div className="px-5 text-center sm:text-left">
@@ -285,7 +285,7 @@ function App() {
     <div className="space-y-2">
       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Type</label>
       <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-        {['Main', 'Other', 'Come'].map((type) => (
+        {['Expenses', 'Receivables', 'Payables'].map((type) => (
           <button 
             key={type} 
             type="button" 
@@ -327,7 +327,7 @@ function App() {
               <h2 className="text-lg font-bold text-slate-800 mb-5">Summary</h2>
               <DateFilter onFilterChange={setDateRange} />
               <div className="flex bg-slate-50 p-1 rounded-xl gap-1 my-5">
-                {['Main', 'Other', 'Come'].map(t => (
+                {['Expenses', 'Receivables', 'Payables'].map(t => (
                   <button key={t} onClick={() => setSummaryFilter(t)} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${summaryFilter === t ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>{t}</button>
                 ))}
               </div>
@@ -347,7 +347,7 @@ function App() {
             <div className="flex flex-col gap-4">
               <input className="w-full px-6 py-4 rounded-2xl border border-slate-100 bg-white shadow-sm outline-none focus:border-indigo-500 transition-all" placeholder="Search entries..." value={search} onChange={e => setSearch(e.target.value)} />
               <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm gap-1 w-full ">
-                {['Main', 'Other', 'Come'].map(t => (
+                {['Expenses', 'Receivables', 'Payables'].map(t => (
                   <button key={t} onClick={() => setFilterMode(t)} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${filterMode === t ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{t}</button>
                 ))}
               </div>
