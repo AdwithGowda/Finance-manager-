@@ -4,6 +4,7 @@ import Auth from "./pages/Auth";
 import Alert from "./Alert";
 import Toast from "./Toast";
 import DateFilter from "./DateFilter";
+import CategoryChart from "./CategoryChart";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -205,7 +206,7 @@ function App() {
                   </div>
                 </div>
                 <h1 className="text-3xl font-black tracking-tight text-white leading-tight">
-                  MyWallet<span className="text-indigo-200">Pro</span>
+                  My Wallet<span className="text-indigo-200"> Pro</span>
                 </h1>
               </div>
 
@@ -355,10 +356,14 @@ function App() {
               <DateFilter onFilterChange={setDateRange} />
               <div className="flex bg-slate-50 p-1 rounded-xl gap-1 my-5">
                 {['Expenses', 'Receivables', 'Payables'].map(t => (
-                  <button key={t} onClick={() => setSummaryFilter(t)} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${summaryFilter === t ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>{t}</button>
+                  <button key={t} onClick={() => setSummaryFilter(t)} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${summaryFilter === t ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>{t}</button>
                 ))}
               </div>
-              <div className="space-y-3">
+
+              {/* INTEGRATED CHART */}
+              <CategoryChart data={categoryTotals} />
+
+              <div className="space-y-3 mt-6">
                 {Object.entries(categoryTotals).map(([cat, val]) => (
                   <div key={cat} className="flex justify-between items-center p-3 bg-slate-50/30 rounded-2xl">
                     <span className={`text-[10px] px-3 py-1 rounded-md font-bold uppercase ${getCategoryStyle(cat)}`}>{cat}</span>
