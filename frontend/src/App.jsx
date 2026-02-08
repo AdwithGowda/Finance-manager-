@@ -27,6 +27,7 @@ axios.interceptors.response.use(
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
+  const [username, setUsername] = useState(""); // <--- ADDED THIS
   const [expenses, setExpenses] = useState([]);
   const [dateRange, setDateRange] = useState('all');
 
@@ -45,9 +46,23 @@ function App() {
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, id: null });
   const [toastConfig, setToastConfig] = useState({ isOpen: false, message: '' });
 
+  // Combined effect for initial load
   useEffect(() => {
-    if (isAuthenticated) fetchData();
+    if (isAuthenticated) {
+      fetchData();
+      fetchProfile(); // <--- ADDED THIS
+    }
   }, [isAuthenticated]);
+
+  // Fetch the username from the new backend endpoint
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/me`);
+      setUsername(res.data.username);
+    } catch (error) {
+      console.error("Failed to fetch profile");
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -115,6 +130,13 @@ function App() {
     } catch (error) { showToast('Delete failed'); }
   };
 
+  // Helper for Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+    setUsername(""); // Clear username state
+  };
+
   /* -------------------- FILTER LOGIC -------------------- */
   const dateFiltered = expenses.filter(exp => {
     if (dateRange === 'all') return true;
@@ -177,7 +199,6 @@ function App() {
             <div className="text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-4 mb-2">
                 <div className="relative w-12 h-12 shrink-0 flex items-center justify-center">
-                  {/* Rotating dashed border */}
                   <div className="absolute inset-0 border-2 border-dashed border-indigo-300/60 rounded-full animate-[spin_8s_linear_infinite]"></div>
                   <div className="relative bg-indigo-600 w-8 h-8 rounded-full shadow-sm flex items-center justify-center">
                     <img src="/agw2.png" alt="Logo" className="w-5 h-5 object-contain" />
@@ -187,12 +208,23 @@ function App() {
                   MyWallet<span className="text-indigo-200">Pro</span>
                 </h1>
               </div>
-              <p className="text-indigo-100/80 text-sm font-medium tracking-wide">Multi-Account Dashboard</p>
+
+              {/* USER GREETING SECTION */}
+              <div className="mt-1">
+                <p className="text-white text-lg font-bold">
+                  Hello,{' '}
+                  <span className={`text-indigo-200 capitalize transition-opacity duration-500 ${username ? 'opacity-100' : 'opacity-50'}`}>
+                    {username || 'Guest'}
+                  </span>
+                </p>
+                <p className="text-indigo-100/60 text-xs font-medium tracking-wide uppercase">
+                  Multi-Account Dashboard
+                </p>
+              </div>
             </div>
 
             {/* BALANCES & LOGOUT SECTION */}
             <div className="flex flex-col sm:flex-row items-center w-full lg:w-auto gap-6 sm:gap-8">
-
               {/* Dynamic Balance Display */}
               <div className="flex flex-wrap justify-center gap-2 bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner w-full sm:w-auto">
                 {[
@@ -207,7 +239,6 @@ function App() {
                         ₹{item.v.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
                       </p>
                     </div>
-                    {/* Divider (Hidden after last item) */}
                     {index !== array.length - 1 && (
                       <div className="hidden sm:block h-8 w-px bg-white/20"></div>
                     )}
@@ -225,7 +256,6 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </button>
-
             </div>
           </div>
         </header>
@@ -234,93 +264,90 @@ function App() {
 
           <aside className="lg:col-span-4 space-y-6">
 
-            <section className={`bg-white p-6 rounded-3xl shadow-sm transition-all duration-500 border ${
-  editingId 
-    ? 'border-orange-400 ring-4 ring-orange-500/10 shadow-md' 
-    : 'border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200'
-}`}>
-  <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
-    <span className={`w-2 h-2 rounded-full ${editingId ? 'bg-orange-500 animate-pulse' : 'bg-indigo-500'}`}></span>
-    {editingId ? "Edit Transaction" : "New Transaction"}
-  </h2>
+            <section className={`bg-white p-6 rounded-3xl shadow-sm transition-all duration-500 border ${editingId
+              ? 'border-orange-400 ring-4 ring-orange-500/10 shadow-md'
+              : 'border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200'
+              }`}>
+              <h2 className="text-lg font-bold mb-5 flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${editingId ? 'bg-orange-500 animate-pulse' : 'bg-indigo-500'}`}></span>
+                {editingId ? "Edit Transaction" : "New Transaction"}
+              </h2>
 
-  <form onSubmit={handleSubmit} className="space-y-4">
-    <input 
-      className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none focus:bg-white focus:ring-2 ring-indigo-50 hover:border-slate-200 transition-all" 
-      placeholder="Transaction Name" 
-      value={form.title} 
-      onChange={e => setForm({ ...form, title: e.target.value })} 
-      required 
-    />
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none focus:bg-white focus:ring-2 ring-indigo-50 hover:border-slate-200 transition-all"
+                  placeholder="Transaction Name"
+                  value={form.title}
+                  onChange={e => setForm({ ...form, title: e.target.value })}
+                  required
+                />
 
-    <div className="grid grid-cols-2 gap-4">
-      <input 
-        type="number" 
-        className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none focus:bg-white hover:border-slate-200 transition-all" 
-        placeholder="0.00" 
-        value={form.amount} 
-        onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || '' })} 
-        required 
-      />
-      <select 
-        className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none cursor-pointer hover:border-slate-200 transition-all" 
-        value={form.category} 
-        onChange={e => setForm({ ...form, category: e.target.value })}
-      >
-        <option>Food</option>
-        <option>Rent</option>
-        <option>Shopping</option>
-        <option>Bills</option>
-        <option>Travel</option>
-      </select>
-    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="number"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none focus:bg-white hover:border-slate-200 transition-all"
+                    placeholder="0.00"
+                    value={form.amount}
+                    onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || '' })}
+                    required
+                  />
+                  <select
+                    className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none cursor-pointer hover:border-slate-200 transition-all"
+                    value={form.category}
+                    onChange={e => setForm({ ...form, category: e.target.value })}
+                  >
+                    <option>Food</option>
+                    <option>Rent</option>
+                    <option>Shopping</option>
+                    <option>Bills</option>
+                    <option>Travel</option>
+                  </select>
+                </div>
 
-    <input 
-      type="date" 
-      className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none hover:border-slate-200 transition-all" 
-      value={form.date} 
-      onChange={e => setForm({ ...form, date: e.target.value })} 
-    />
+                <input
+                  type="date"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50/50 outline-none hover:border-slate-200 transition-all"
+                  value={form.date}
+                  onChange={e => setForm({ ...form, date: e.target.value })}
+                />
 
-    <div className="space-y-2">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Type</label>
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
-        {['Expenses', 'Receivables', 'Payables'].map((type) => (
-          <button 
-            key={type} 
-            type="button" 
-            onClick={() => setSpendType(type)} 
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-              spendType === type 
-                ? 'bg-white text-indigo-600 shadow-sm' 
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            {type}
-          </button>
-        ))}
-      </div>
-    </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Type</label>
+                  <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
+                    {['Expenses', 'Receivables', 'Payables'].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setSpendType(type)}
+                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${spendType === type
+                          ? 'bg-white text-indigo-600 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                          }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-    <div className="space-y-3">
-      <button className={`w-full py-4 rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98] hover:shadow-xl ${
-        editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-indigo-600 hover:bg-indigo-700'
-      }`}>
-        {editingId ? "Save Changes" : "Add Entry"}
-      </button>
-      
-      {editingId && (
-        <button 
-          type="button" 
-          onClick={handleCancelEdit} 
-          className="w-full py-2 text-sm font-semibold text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-        >
-          Cancel Editing
-        </button>
-      )}
-    </div>
-  </form>
-</section>
+                <div className="space-y-3">
+                  <button className={`w-full py-4 rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98] hover:shadow-xl ${editingId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-indigo-600 hover:bg-indigo-700'
+                    }`}>
+                    {editingId ? "Save Changes" : "Add Entry"}
+                  </button>
+
+                  {editingId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="w-full py-2 text-sm font-semibold text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                    >
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
+              </form>
+            </section>
 
             {/* SUMMARY SECTION */}
             <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
