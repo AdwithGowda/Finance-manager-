@@ -25,7 +25,7 @@ app = FastAPI()
 # ================= CORS =================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change in production
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -36,16 +36,28 @@ async def startup():
     app.state.db = await asyncpg.create_pool(DATABASE_URL)
 
     async with app.state.db.acquire() as conn:
-        # USERS TABLE
+        # 1. USERS TABLE
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
+                username TEXT,
                 email TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL
             );
         """)
 
-        # EXPENSES TABLE (Updated with 'date' column)
+        # Migration: Add username to existing users table if it doesn't exist
+        await conn.execute("""
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                               WHERE table_name='users' AND column_name='username') THEN
+                    ALTER TABLE users ADD COLUMN username TEXT;
+                END IF;
+            END $$;
+        """)
+
+        # 2. EXPENSES TABLE
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS expenses (
                 id SERIAL PRIMARY KEY,
@@ -58,7 +70,6 @@ async def startup():
             );
         """)
         
-        # Check if 'date' column exists for old databases, add if missing
         await conn.execute("""
             DO $$ 
             BEGIN 
@@ -69,40 +80,46 @@ async def startup():
             END $$;
         """)
 
-    print("✅ Tables created / verified")
+    print("✅ Tables and Columns verified")
 
 @app.on_event("shutdown")
 async def shutdown():
     await app.state.db.close()
 
 # ================= MODELS =================
-class User(BaseModel):
+class UserLogin(BaseModel):
     email: str
     password: str
 
-# Updated Expense Model to include date
+class UserRegister(BaseModel):
+    username: str
+    email: str
+    password: str
+
 class Expense(BaseModel):
     title: str
     amount: float
     category: str
     date: str 
 
-# ================= AUTH =================
+# ================= AUTH & USER ROUTES =================
+
 @app.post("/register")
-async def register(user: User):
+async def register(user: UserRegister):
     try:
         async with app.state.db.acquire() as conn:
             await conn.execute(
-                "INSERT INTO users (email, password) VALUES ($1, $2)",
+                "INSERT INTO users (username, email, password) VALUES ($1, $2, $3)",
+                user.username,
                 user.email,
                 hash_password(user.password),
             )
         return {"message": "User registered successfully"}
-    except:
-        raise HTTPException(status_code=400, detail="User already exists")
+    except Exception:
+        raise HTTPException(status_code=400, detail="User already exists or Invalid data")
 
 @app.post("/login")
-async def login(user: User):
+async def login(user: UserLogin):
     async with app.state.db.acquire() as conn:
         db_user = await conn.fetchrow(
             "SELECT * FROM users WHERE email=$1",
@@ -110,13 +127,36 @@ async def login(user: User):
         )
 
     if not db_user or not verify_password(user.password, db_user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password. Please try again.")
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     token = create_access_token({"user_id": db_user["id"]})
     return {
         "access_token": token,
         "token_type": "bearer"
     }
+
+# NEW: Fetch Current User Profile for the Header
+@app.get("/me")
+async def get_me(user_id: int = Depends(get_current_user)):
+    try:
+        async with app.state.db.acquire() as conn:
+            user = await conn.fetchrow(
+                "SELECT username, email FROM users WHERE id = $1",
+                user_id
+            )
+
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            return {
+                "username": user["username"] or "User",
+                "email": user["email"]
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"BACKEND ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ================= EXPENSES (JWT PROTECTED) =================
 @app.get("/expenses")
