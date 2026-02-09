@@ -189,72 +189,80 @@ function App() {
     <div className="min-h-screen bg-[#fcfdfe] text-slate-900 font-sans antialiased">
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">
 
-        {/* HEADER */}
-        <header className="relative overflow-hidden bg-indigo-600 rounded-3xl shadow-xl border border-indigo-500/30 p-6 md:p-8">
-          {/* Decorative Background Elements */}
-          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-indigo-400/20 rounded-full blur-2xl pointer-events-none"></div>
+        <header className="relative overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-slate-950 rounded-[2.5rem] shadow-2xl border border-blue-400/20 p-1">
+          {/* Glassmorphism Shine Effect - Enhanced Blue Highlight */}
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_0%,rgba(59,130,246,0.15),transparent)] pointer-events-none"></div>
 
-          <div className="relative flex flex-col lg:flex-row justify-between items-center gap-8">
-            {/* LOGO & BRAND SECTION */}
-            <div className="text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start gap-4 mb-2">
-                <div className="relative w-12 h-12 shrink-0 flex items-center justify-center">
-                  <div className="absolute inset-0 border-2 border-dashed border-indigo-300/60 rounded-full animate-[spin_8s_linear_infinite]"></div>
-                  <div className="relative bg-indigo-600 w-8 h-8 rounded-full shadow-sm flex items-center justify-center">
-                    <img src="/agw2.png" alt="Logo" className="w-5 h-5 object-contain" />
+          {/* Background Logo Watermark */}
+          <img src="/agw2.png" alt="" className="absolute -bottom-10 -right-10 w-64 h-64 opacity-[0.04] pointer-events-none brightness-0 invert" />
+
+          <div className="relative p-6 md:p-10 flex flex-col lg:flex-row justify-between items-center gap-10">
+
+            {/* LEFT: BRAND & CHIP SECTION */}
+            <div className="flex flex-col items-center lg:items-start gap-6">
+              <div className="flex items-center gap-5">
+                {/* The "EMV Chip" with your Logo */}
+                <div className="w-16 h-12 bg-gradient-to-br from-amber-100 via-amber-400 to-yellow-600 rounded-lg relative overflow-hidden shadow-inner flex items-center justify-center border border-white/30">
+                  <div className="absolute inset-0 grid grid-cols-3 gap-1 p-1 opacity-20">
+                    {[...Array(6)].map((_, i) => <div key={i} className="border border-black/40 rounded-sm"></div>)}
                   </div>
+                  {/* Your Logo on the Chip */}
+                  <img src="/agw2.png" alt="Logo" className="w-7 h-7 object-contain relative z-10 brightness-90 contrast-125" />
                 </div>
-                <h1 className="text-3xl font-black tracking-tight text-white leading-tight">
-                  My Wallet<span className="text-indigo-200"> Pro</span>
-                </h1>
+
+                <div>
+                  <h1 className="text-2xl font-black tracking-widest text-white uppercase italic">
+                    My Wallet<span className="text-blue-400"> Pro</span>
+                  </h1>
+                  <p className="text-[10px] text-blue-300/60 tracking-[0.4em] uppercase font-bold">
+                    Digital Ledger
+                  </p>
+                </div>
               </div>
 
-              {/* USER GREETING SECTION */}
-              <div className="mt-1">
-                <p className="text-white text-lg font-bold">
-                  Hello,{' '}
-                  <span className={`text-indigo-200 capitalize transition-opacity duration-500 ${username ? 'opacity-100' : 'opacity-50'}`}>
-                    {username || 'Guest'}
-                  </span>
-                </p>
-                <p className="text-indigo-100/60 text-xs font-medium tracking-wide uppercase">
-                  Multi-Account Dashboard
+              <div className="text-center lg:text-left">
+                <p className="text-blue-100/30 text-[9px] uppercase tracking-[0.3em] mb-1 font-bold">Account Holder</p>
+                <p className={`text-xl font-mono text-white tracking-tighter transition-opacity duration-500 ${username ? 'opacity-100' : 'opacity-50'}`}>
+                  {username?.toUpperCase() || 'GUEST USER'}
                 </p>
               </div>
             </div>
 
-            {/* BALANCES & LOGOUT SECTION */}
-            <div className="flex flex-col sm:flex-row items-center w-full lg:w-auto gap-6 sm:gap-8">
-              {/* Dynamic Balance Display */}
-              <div className="flex flex-wrap justify-center gap-2 bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner w-full sm:w-auto">
-                {[
-                  { l: 'Expenses', v: getBalance('Expenses') },
-                  { l: 'Receivables', v: getBalance('Receivables') },
-                  { l: 'Payables', v: getBalance('Payables') }
-                ].map((item, index, array) => (
-                  <div key={item.l} className="flex items-center">
-                    <div className="px-5 text-center sm:text-left">
-                      <p className="text-[10px] uppercase font-bold tracking-[0.15em] text-indigo-200 mb-1">{item.l}</p>
-                      <p className="text-xl md:text-2xl font-black text-white tabular-nums">
-                        ₹{item.v.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
-                      </p>
+            {/* CENTER/RIGHT: THE CARD BALANCES */}
+            <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-6">
+              <div className="relative group w-full sm:w-auto">
+                {/* Outer Blue Glow */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+
+                <div className="relative flex flex-wrap justify-center gap-0 bg-blue-950/40 backdrop-blur-2xl rounded-2xl border border-blue-400/10 overflow-hidden">
+                  {[
+                    { l: 'Expenses', v: getBalance('Expenses') },
+                    { l: 'Receivables', v: getBalance('Receivables') },
+                    { l: 'Payables', v: getBalance('Payables') }
+                  ].map((item, index, array) => (
+                    <div key={item.l} className="flex items-center">
+                      <div className="px-7 py-5 text-center sm:text-left">
+                        <p className="text-[8px] uppercase font-black tracking-[0.25em] text-blue-300/70 mb-2">{item.l}</p>
+                        <p className="text-xl md:text-2xl font-mono font-bold text-white tabular-nums">
+                          ₹{item.v.toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                      {index !== array.length - 1 && (
+                        <div className="hidden sm:block h-8 w-[1px] bg-blue-400/20"></div>
+                      )}
                     </div>
-                    {index !== array.length - 1 && (
-                      <div className="hidden sm:block h-8 w-px bg-white/20"></div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {/* LOGOUT BUTTON */}
+              {/* LOGOUT / EJECT - Blue Theme */}
               <button
                 onClick={() => { localStorage.removeItem("token"); setIsAuthenticated(false); }}
-                className="group relative flex items-center gap-2 bg-white text-indigo-600 hover:bg-indigo-50 px-6 py-3 rounded-2xl font-bold transition-all duration-300 active:scale-95 shadow-lg shadow-black/10 w-full sm:w-auto justify-center"
+                className="group bg-blue-600/20 hover:bg-blue-500 text-blue-100 hover:text-white border border-blue-400/30 px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-3 shadow-2xl"
               >
-                <span className="text-sm">Logout</span>
+                <span>Logout</span>
                 <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7" />
                 </svg>
               </button>
             </div>
