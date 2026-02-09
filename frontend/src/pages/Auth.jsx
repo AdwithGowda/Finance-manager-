@@ -69,7 +69,7 @@ export default function Auth({ onAuthSuccess }) {
 
       {/* ANIMATED BORDER WRAPPER */}
       {/* Increased padding to p-[3px] for a more visible dual-line effect */}
-      <div className="relative w-full max-w-md p-[3px] overflow-hidden rounded-[28px] shadow-2xl">
+      <div className="relative w-full max-w-md p-0.75 overflow-hidden rounded-[28px] shadow-2xl">
         
         {/* MOVING DUAL LIGHT BEAMS */}
         <div 
