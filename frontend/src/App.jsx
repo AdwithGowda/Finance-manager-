@@ -386,46 +386,75 @@ function App() {
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-              {/* STICKY HEADER WRAPPER */}
+              {/* 1. HORIZONTAL SCROLL WRAPPER 
+      This ensures the header and body move left/right together.
+  */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="sticky top-0 bg-white z-10">
-                    <tr className="border-b border-slate-50">
-                      <th className="px-8 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider">Date</th>
-                      <th className="px-8 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider">Name</th>
-                      <th className="px-8 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider text-center">Category</th>
-                      <th className="px-8 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider text-right">Amount</th>
-                      <th className="px-8 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider text-center">Actions</th>
-                    </tr>
-                  </thead>
-                </table>
-                {/* SCROLLABLE BODY RESTRICTED TO ~5 DATA ROWS */}
+
+                {/* 2. VERTICAL SCROLL WRAPPER 
+        Controls the height and vertical scroll.
+    */}
                 <div className="max-h-110 overflow-y-auto custom-scrollbar">
-                  <table className="w-full text-left">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-white z-10">
+                      <tr className="border-b border-slate-50">
+                        {/* Added shadow via CSS border to keep the header distinct during scroll */}
+                        <th className="px-6 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider bg-white">
+                          Date
+                        </th>
+                        <th className="px-6 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider bg-white">
+                          Name
+                        </th>
+                        <th className="px-6 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider text-center bg-white">
+                          Category
+                        </th>
+                        <th className="px-6 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider text-right bg-white">
+                          Amount
+                        </th>
+                        <th className="px-6 py-5 text-[11px] font-bold uppercase text-slate-400 tracking-wider text-center bg-white">
+                          Actions
+                        </th>
+                      </tr>
+                      {/* Subtle bottom shadow line for the sticky header */}
+                      <tr className="absolute bottom-0 left-0 w-full border-b border-slate-100"></tr>
+                    </thead>
+
                     <tbody className="divide-y divide-slate-50">
-                      {filteredTable.map(exp => (
-                        <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-8 py-6 text-sm text-slate-500 font-medium w-1/5">
-                            {new Date(exp.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {filteredTable.map((exp) => (
+                        <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-6 py-5">
+                            <p className="text-xs font-bold text-slate-500">{new Date(exp.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                           </td>
-                          <td className="px-8 py-6 text-[15px] font-semibold text-slate-700 w-1/4">
-                            {exp.title}
+                          <td className="px-6 py-5">
+                            <p className="font-semibold text-slate-700">{exp.title}</p>
                           </td>
-                          <td className="px-8 py-6 text-center w-1/5">
+                          <td className="px-6 py-5 text-center">
                             <span className={`inline-block px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-tight ${getCategoryStyle(exp.category)}`}>
                               {exp.category.split(':')[0]}
                             </span>
                           </td>
-                          <td className="px-8 py-6 text-right font-bold text-slate-900 text-[15px] w-1/5">
+                          <td className="px-6 py-5 text-right font-bold text-slate-900 text-[15px] whitespace-nowrap">
                             ₹{exp.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
-                          <td className="px-8 py-6 w-1/5">
-                            <div className="flex justify-center gap-5">
-                              <button onClick={() => handleEdit(exp)} className="text-indigo-600 cursor-pointer hover:text-indigo-900 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          <td className="px-6 py-5">
+                            <div className="flex justify-center gap-4">
+                              <button
+                                onClick={() => handleEdit(exp)}
+                                className="text-indigo-600 cursor-pointer hover:text-indigo-900 transition-colors p-1"
+                                title="Edit"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
                               </button>
-                              <button onClick={() => setAlertConfig({ isOpen: true, id: exp.id })} className="text-red-500 cursor-pointer hover:text-red-900 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              <button
+                                onClick={() => setAlertConfig({ isOpen: true, id: exp.id })}
+                                className="text-red-500 cursor-pointer hover:text-red-900 transition-colors p-1"
+                                title="Delete"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                               </button>
                             </div>
                           </td>
@@ -433,8 +462,11 @@ function App() {
                       ))}
                     </tbody>
                   </table>
+
                   {filteredTable.length === 0 && (
-                    <div className="py-20 text-center font-bold text-slate-300 uppercase tracking-widest">No entries found</div>
+                    <div className="py-20 text-center font-bold text-slate-300 uppercase tracking-widest">
+                      No entries found
+                    </div>
                   )}
                 </div>
               </div>
