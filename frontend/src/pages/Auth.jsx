@@ -68,20 +68,22 @@ export default function Auth({ onAuthSuccess }) {
       </style>
 
       {/* ANIMATED BORDER WRAPPER */}
-      <div className="relative w-full max-w-md p-0.5 overflow-hidden rounded-[26px] shadow-2xl">
+      {/* Increased padding to p-[3px] for a more visible dual-line effect */}
+      <div className="relative w-full max-w-md p-[3px] overflow-hidden rounded-[28px] shadow-2xl">
         
-        {/* MOVING LIGHT BEAM */}
+        {/* MOVING DUAL LIGHT BEAMS */}
         <div 
           className="absolute inset-[-1000%] animate-border"
           style={{
-            background: "conic-gradient(from 0deg, transparent 0deg, transparent 300deg, #6366f1 330deg, #818cf8 345deg, transparent 360deg)"
+            /* This gradient creates two segments (lines) on opposite sides */
+            background: "conic-gradient(from 0deg, transparent 0deg, #6366f1 45deg, transparent 90deg, transparent 180deg, #818cf8 225deg, transparent 270deg, transparent 360deg)"
           }}
         />
 
         {/* AUTH FORM CARD */}
         <form
           onSubmit={submit}
-          className="relative z-10 bg-white p-8 rounded-3xl w-full space-y-5"
+          className="relative z-10 bg-white p-8 rounded-[25px] w-full space-y-5"
         >
           {/* LOGO AND TITLE SECTION */}
           <div className="text-center mb-2">
